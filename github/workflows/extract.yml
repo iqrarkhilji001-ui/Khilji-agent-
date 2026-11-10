@@ -1,0 +1,27 @@
+name: Extract project ZIP (one-time)
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract the ZIP into the repository root
+        run: |
+          set -e
+          unzip -q personal-agent-v0.3.2.zip -d /tmp/pa
+          tar -C /tmp/pa/personal-agent-v0.3.2 --exclude=./.github -cf - . | tar -xf -
+      - name: Safety check
+        run: |
+          if find . -path ./.git -prune -o \( -name ".env" -o -name "*.db" -o -name "*.sqlite*" -o -name "*.pem" -o -name "*.key" -o -name "__pycache__" \) -print | grep -q .; then
+            echo "Unsafe file found - stopping"; exit 1
+          fi
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Stage 1: extract personal-agent-v0.3.2 into the repository root"
+          git push

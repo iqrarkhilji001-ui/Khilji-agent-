@@ -1,0 +1,26 @@
+# Optional Render "Blueprint". You can also create the service by hand (see DEPLOY.md).
+services:
+  - type: web
+    name: my-ai-agent
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false            # you type it into Render's dashboard; it is never stored in this repo
+      - key: AGENT_TOKEN
+        generateValue: true    # Render creates a random login token for you
+      - key: AGENT_ENABLE_RUN_PYTHON
+        value: "0"
+      - key: AGENT_TRUST_PROXY
+        value: "1"             # Render terminates HTTPS in a proxy; use the real client address for rate limits
+      - key: AGENT_NOTIFY_ON_COMPLETE
+        value: "0"             # set to 1 for a generic "task finished" notification on paired phones
+# PERSISTENT STORAGE (paid): the free plan has no disk. On a paid plan, add a disk to the service and point the
+# data folder at it, otherwise history, memory and paired phones are erased on every restart:
+#     disk:
+#       name: agent-data
+#       mountPath: /data
+#       sizeGB: 1
+#   plus env vars  AGENT_DATA_DIR=/data  and  AGENT_EPHEMERAL_STORAGE=0
+# Not tested. This project does not buy anything for you.

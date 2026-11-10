@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<title>My AI Agent</title>
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--line:#334155;--text:#e2e8f0;--mute:#94a3b8;--accent:#38bdf8;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171}
+@media (prefers-color-scheme:light){:root{--bg:#f1f5f9;--card:#fff;--line:#cbd5e1;--text:#0f172a;--mute:#475569;--accent:#0369a1;--ok:#15803d;--warn:#b45309;--bad:#b91c1c}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,sans-serif;padding-bottom:env(safe-area-inset-bottom)}
+header{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;gap:8px;align-items:center;z-index:5}
+header h1{font-size:18px;margin:0;flex:1}
+nav{display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid var(--line)}
+nav button{flex:1;padding:10px 4px;font-size:14px}
+main{padding:12px 16px;max-width:720px;margin:0 auto}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:10px 14px;min-height:44px}
+button.primary{background:var(--accent);color:#04202e;border-color:var(--accent);font-weight:600}
+button.active{border-color:var(--accent);color:var(--accent)}
+button.danger{color:var(--bad)}
+button:disabled{opacity:.5}
+textarea,input,select{width:100%;font:inherit;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:10px}
+input[type=checkbox]{width:auto}
+textarea{min-height:84px;resize:vertical}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:0 0 auto}.grow{flex:1 1 auto!important}
+.badge{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mute);white-space:nowrap}
+.s-completed_verified{color:var(--ok);border-color:var(--ok)}
+.s-completed_unverified,.s-waiting_approval{color:var(--warn);border-color:var(--warn)}
+.s-failed,.s-cancelled{color:var(--bad);border-color:var(--bad)}
+.s-running,.s-pending{color:var(--accent);border-color:var(--accent)}
+.mute{color:var(--mute);font-size:14px}
+.result{white-space:pre-wrap;word-wrap:break-word}
+.step{font-size:13px;color:var(--mute);border-left:2px solid var(--line);padding:2px 8px;margin:4px 0;word-break:break-word}
+.step.error{color:var(--bad)}
+.hidden{display:none!important}
+.err{color:var(--bad)}
+.item{cursor:pointer}
+.voice{text-align:center}
+#mic{width:96px;height:96px;border-radius:50%;font-size:40px;padding:0;border:3px solid var(--accent)}
+#mic.live{background:var(--accent);animation:pulse 1.2s infinite}
+#mic[data-state=processing]{opacity:.6}
+#mic[data-state=speaking]{border-color:var(--ok)}
+#mic[data-state=error]{border-color:var(--bad)}
+@keyframes pulse{50%{box-shadow:0 0 0 12px rgba(56,189,248,.25)}}
+.code{font:700 32px/1.2 ui-monospace,monospace;letter-spacing:4px;text-align:center;margin:8px 0}
+.opts{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin:8px 0}
+.opts label{display:flex;gap:6px;align-items:center;font-size:14px}
+</style>
+</head>
+<body>
+<header><h1>My AI Agent</h1><span id="conn" class="badge">offline</span></header>
+
+<div id="login" class="hidden"><main>
+  <div class="card">
+    <p><b>Enter your access token</b></p>
+    <p class="mute">It is the AGENT_TOKEN you set on the server (or the one printed at first start).</p>
+    <input id="tok" type="password" autocomplete="off" placeholder="Access token">
+    <p id="loginErr" class="err"></p>
+    <button class="primary" id="loginBtn">Connect</button>
+  </div>
+</main></div>
+
+<div id="app" class="hidden">
+<nav>
+  <button data-tab="chat" class="active">Task</button>
+  <button data-tab="history">History</button>
+  <button data-tab="memory">Memory</button>
+  <button data-tab="phone">Phone</button>
+  <button data-tab="about">About</button>
+</nav>
+<main>
+  <section id="tab-chat">
+    <div id="approvals"></div>
+    <div class="card voice">
+      <button id="mic" type="button" aria-label="Tap the microphone and speak">🎤</button>
+      <div id="voiceState" class="mute" role="status" aria-live="polite">Tap the microphone and speak</div>
+      <div id="heard" class="result" aria-live="polite"></div>
+      <div id="voiceMsg" class="mute" role="alert"></div>
+      <div class="row" style="margin-top:8px">
+        <select id="lang" class="grow" aria-label="Language">
+          <option value="en-US">English</option>
+          <option value="ur-PK">اردو (Urdu)</option>
+          <option value="hi-IN">हिन्दी (Hindi)</option>
+        </select>
+        <button id="retry" type="button" class="hidden">Retry</button>
+        <button id="stopSpeak" type="button" disabled>Stop speaking</button>
+      </div>
+      <div class="opts">
+        <label><input type="checkbox" id="autoSend" checked> Send when I stop talking</label>
+        <label id="speakRow"><input type="checkbox" id="speakReplies" checked> Speak replies</label>
+      </div>
+    </div>
+    <textarea id="req" maxlength="8000" placeholder="…or type here"></textarea>
+    <div class="row" style="margin-top:8px">
+      <button class="primary grow" id="send" type="button">Send</button>
+      <button id="cancelBtn" type="button" class="danger">Cancel</button>
+    </div>
+    <p id="sendErr" class="err"></p>
+    <div id="current"></div>
+  </section>
+  <section id="tab-history" class="hidden"><div id="hist"></div>
+    <button class="danger" id="clearHist" type="button">Delete finished tasks</button></section>
+  <section id="tab-memory" class="hidden">
+    <p class="mute">Notes the agent keeps between tasks. You can delete any of them.</p>
+    <div id="mem"></div>
+    <div class="row"><input id="memText" class="grow" maxlength="500" placeholder="Add a note…"><button id="memAdd" type="button">Add</button></div>
+    <p><button class="danger" id="memClear" type="button">Delete all memory</button></p>
+  </section>
+  <section id="tab-phone" class="hidden">
+    <p class="mute">Pair the Android companion app so the agent can show notifications and set reminders on your phone. Only you can create a pairing code, and you can disconnect a phone at any time.</p>
+    <button class="primary" id="pairBtn" type="button">Create pairing code</button>
+    <div id="pairOut"></div>
+    <h3>Paired phones</h3><div id="devices"></div>
+    <h3>Recent phone commands</h3><div id="commands"></div>
+  </section>
+  <section id="tab-about" class="hidden"><div id="about"></div>
+    <p><button id="logout" type="button">Sign out of this browser</button></p></section>
+</main>
+</div>
+<script src="/static/voice.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

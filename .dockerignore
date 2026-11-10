@@ -1,0 +1,11 @@
+.env
+data/
+tests/
+**/__pycache__/
+*.zip
+.git/
+android/
+companion/
+.github/
+*.md
+static/*.map

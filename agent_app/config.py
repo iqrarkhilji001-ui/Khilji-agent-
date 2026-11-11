@@ -40,7 +40,8 @@ class Config:
     max_steps: int = 12
     max_tokens: int = 4096
     request_timeout: int = 120
-    daily_ai_limit_seconds: int = 600\n    trial_days: int = 30
+    daily_ai_limit_seconds: int = 600
+    trial_days: int = 30
     auth_fail_delay: float = 0.5
     token_generated: bool = False
     brave_api_key: str = ""          # optional; Brave's API is paid/metered, so it is off unless you set it
@@ -113,7 +114,8 @@ class Config:
             port=_int("AGENT_PORT", 8080, 1, 65535),
             max_steps=_int("AGENT_MAX_STEPS", 12, 1, 50),
             max_tokens=_int("AGENT_MAX_TOKENS", 8000, 256, 16000),  # Sonnet 5.5 thinking counts toward this
-            daily_ai_limit_seconds=_int("AGENT_DAILY_AI_SECONDS", 600, 60, 86400),\n            trial_days=_int("AGENT_TRIAL_DAYS", 30, 1, 90),
+            daily_ai_limit_seconds=_int("AGENT_DAILY_AI_SECONDS", 600, 60, 86400),
+            trial_days=_int("AGENT_TRIAL_DAYS", 30, 1, 90),
             token_generated=generated,
             brave_api_key=(env.get("BRAVE_API_KEY") or "").strip(),
             enable_run_python=(env.get("AGENT_ENABLE_RUN_PYTHON", "1").strip().lower() not in ("0", "false", "no", "off")),

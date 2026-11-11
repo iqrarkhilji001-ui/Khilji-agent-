@@ -153,7 +153,8 @@ def create_app(cfg: Config, llm: Any = None, registry: Optional[ToolRegistry] = 
             daily_ai_limit_seconds=cfg.daily_ai_limit_seconds,
             daily_ai_used_seconds=round(used_seconds, 1),
             daily_ai_remaining_seconds=round(max(0, cfg.daily_ai_limit_seconds - used_seconds), 1),
-            daily_ai_resets_at="00:00 Asia/Karachi",\n            trial=trial,
+            daily_ai_resets_at="00:00 Asia/Karachi",
+            trial=trial,
         )
 
     # ------------------------------------------------------------ tasks

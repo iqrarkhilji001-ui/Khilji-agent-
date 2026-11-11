@@ -32,8 +32,8 @@ class Config:
     workspace: Path
     token: str
     api_key: str = ""
-    model: str = "claude-sonnet-5-5"
-    api_base: str = "https://api.anthropic.com"
+    model: str = "gemini-2.5-flash"
+    api_base: str = "https://generativelanguage.googleapis.com/v1beta"
     anthropic_version: str = "2023-06-01"
     host: str = "127.0.0.1"
     port: int = 8080
@@ -106,9 +106,9 @@ class Config:
             data_dir=data_dir,
             workspace=workspace,
             token=token,
-            api_key=(env.get("ANTHROPIC_API_KEY") or "").strip(),
-            model=(env.get("ANTHROPIC_MODEL") or "claude-sonnet-5-5").strip(),
-            api_base=(env.get("ANTHROPIC_API_BASE") or "https://api.anthropic.com").rstrip("/"),
+            api_key=(env.get("GEMINI_API_KEY") or "").strip(),
+            model=(env.get("GEMINI_MODEL") or "gemini-2.5-flash").strip(),
+            api_base=(env.get("GEMINI_API_BASE") or "https://generativelanguage.googleapis.com/v1beta").rstrip("/"),
             host=(env.get("AGENT_HOST") or "127.0.0.1").strip(),
             port=_int("AGENT_PORT", 8080, 1, 65535),
             max_steps=_int("AGENT_MAX_STEPS", 12, 1, 50),

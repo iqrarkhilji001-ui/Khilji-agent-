@@ -29,6 +29,7 @@ class GeminiClient:
 
     def _contents(self, messages):
         contents=[]
+        function_names={}
         for msg in messages:
             role = "model" if msg.get("role") == "assistant" else "user"
             blocks = msg.get("content", "")
@@ -36,14 +37,16 @@ class GeminiClient:
             parts=[]
             for b in blocks or []:
                 if not isinstance(b,dict): continue
-                if b.get("type") == "text" and b.get("text"):
+                kind=b.get("type")
+                if kind == "text" and b.get("text"):
                     parts.append({"text":b["text"]})
-                elif b.get("type") == "tool_use":
+                elif kind == "tool_use":
+                    function_names[b.get("id")] = b.get("name","tool")
                     parts.append({"functionCall":{"name":b.get("name",""),"args":b.get("input") or {}}})
-                elif b.get("type") == "tool_result":
-                    try: response={"result":b.get("content","")}
-                    except Exception: response={"result":"Tool completed"}
-                    parts.append({"functionResponse":{"name":b.get("name","tool"),"response":response}})
+                elif kind == "tool_result":
+                    name=function_names.get(b.get("tool_use_id"))
+                    if name:
+                        parts.append({"functionResponse":{"name":name,"response":{"result":str(b.get("content",""))}}})
             if parts: contents.append({"role":role,"parts":parts})
         return contents
 

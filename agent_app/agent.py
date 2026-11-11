@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import re
 import threading
+import time
 from dataclasses import replace
 from datetime import datetime
 from typing import Any, Optional
@@ -88,6 +90,7 @@ class AgentRunner:
         self.http_get = http_get
         self.resolver = resolver
         self._lock = threading.Lock()
+        self._model_lock = threading.Lock()
         self._active: set[int] = set()
         self._rerun: set[int] = set()
 
@@ -180,11 +183,24 @@ class AgentRunner:
 
     def _call_model(self, task_id: int, system: str, messages: list, tools: Optional[list],
                     max_tokens: Optional[int] = None) -> dict:
-        resp = self.llm.create(system, messages, tools, max_tokens) if max_tokens else \
-            self.llm.create(system, messages, tools)
-        usage = resp.get("usage") or {}
-        self.store.add_tokens(task_id, usage.get("input_tokens", 0), usage.get("output_tokens", 0))
-        return resp
+        # Serialize model calls so parallel tasks cannot all spend the same remaining allowance.
+        with self._model_lock:
+            used = self.store.daily_ai_seconds_used()
+            remaining = self.cfg.daily_ai_limit_seconds - used
+            if remaining <= 0:
+                raise LLMError(
+                    "Daily AI time limit reached (10 minutes). It resets at midnight Pakistan time."
+                )
+            started = time.monotonic()
+            try:
+                resp = self.llm.create(system, messages, tools, max_tokens) if max_tokens else \
+                    self.llm.create(system, messages, tools)
+            finally:
+                elapsed = max(1, math.ceil(time.monotonic() - started))
+                self.store.add_daily_ai_seconds(elapsed)
+            usage = resp.get("usage") or {}
+            self.store.add_tokens(task_id, usage.get("input_tokens", 0), usage.get("output_tokens", 0))
+            return resp
 
     # ------------------------------------------------------------ main loop
     def _loop(self, task_id: int) -> None:

@@ -14,10 +14,10 @@ def config_warnings(cfg: Config) -> list[dict]:
     """Offline checks (no network). Each item: {"level": "error"|"warn"|"info", "message": str}."""
     out: list[dict] = []
     if not cfg.api_key:
-        out.append({"level": "error", "message": "ANTHROPIC_API_KEY is not set. The page will open, but tasks "
+        out.append({"level": "error", "message": "GEMINI_API_KEY is not set. The page will open, but tasks "
                     "cannot run. Set it in .env (local) or in your host's environment-variable settings."})
-    elif not cfg.api_key.startswith("sk-ant-"):
-        out.append({"level": "warn", "message": "ANTHROPIC_API_KEY does not start with 'sk-ant-'. Anthropic API "
+    elif not cfg.api_key.startswith("AIza"):
+        out.append({"level": "warn", "message": "GEMINI_API_KEY does not start with 'AIza'. Gemini API "
                     "keys normally do; check that you copied the whole key."})
     if len(cfg.token) < 32:
         out.append({"level": "warn", "message": "AGENT_TOKEN is shorter than 32 characters. Use a longer random "
@@ -39,16 +39,16 @@ def config_warnings(cfg: Config) -> list[dict]:
 def check_api(cfg: Config, llm: Any) -> dict:
     """One tiny real model call to prove key + model id work. Costs a few tokens."""
     if not cfg.api_key:
-        return {"ok": False, "message": "ANTHROPIC_API_KEY is not set."}
+        return {"ok": False, "message": "GEMINI_API_KEY is not set."}
     try:
         resp = llm.create("Reply with the single word OK.", [{"role": "user", "content": "ping"}], None, 256)
     except LLMError as exc:
         text = redact(str(exc), cfg.secrets_list())
         hint = ""
-        for code, advice in (("401", "The API key was rejected. Re-copy it from console.anthropic.com."),
+        for code, advice in (("401", "The API key was rejected. Re-copy it from Google AI Studio."),
                              ("403", "The key is not allowed to use this model or API."),
-                             ("404", f"Model id '{cfg.model}' was not found. Check ANTHROPIC_MODEL."),
-                             ("429", "Rate limit or no remaining credit. Check your Anthropic billing and limits."),
+                             ("404", f"Model id '{cfg.model}' was not found. Check GEMINI_MODEL."),
+                             ("429", "Rate limit or no remaining credit. Check your Gemini billing and limits."),
                              ("400", "The API rejected the request; see the message above.")):
             if f"error {code}" in text:
                 hint = " " + advice

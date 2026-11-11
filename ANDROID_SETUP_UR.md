@@ -1,105 +1,89 @@
-# اینڈرائیڈ فون پر سیٹ اپ (آسان اردو گائیڈ)
+# Android par Personal AI Agent — Free local setup (Termux)
 
-**ضروری سچ:** اس گائیڈ کا کوئی بھی قدم ابھی تک اصلی اینڈرائیڈ فون پر آزمایا نہیں گیا۔ Render پر ڈپلائے نہیں ہوا اور APK بنی بھی نہیں۔ نیچے ہر قدم "تیار مگر آزمایا نہیں گیا" ہے۔ جہاں کچھ نہ چلے، وہاں کا سرخ پیغام (error) مجھے بھیجیں۔ **اپنی key یا token کبھی چیٹ میں نہ بھیجیں۔**
+**Payment card ya Render ki zaroorat nahi.** Is setup mein aapka Android phone hi server hoga. Phone band, Termux force-stop, ya internet band ho to remote access/AI tasks ruk sakte hain. Yeh guide abhi real phone par verify nahi hui.
 
-دو راستے ہیں۔ **راستہ A (Termux)** میں APK نہیں چاہیے، اور پہلے یہی آزمائیں۔ **راستہ B (APK)** بہتر ہے کیونکہ یہ سسٹم الارم استعمال کرتی ہے، مگر پہلے اسے کلاؤڈ میں بنانا ہوگا۔
+**Security:** Gemini API key ya AGENT_TOKEN ChatGPT/GitHub mein share na karein. Key sirf apne phone ke private `.env` file mein rakhein. Is project ko sirf apne phone par local access ke liye chalayein.
 
----
+## 1) Termux install karein
+1. F-Droid ki official website se Termux install karein: https://f-droid.org/packages/com.termux/
+2. Termux khol kar commands ek ek karke chalayein:
 
-## حصہ 1: سرور آن لائن کرنا (ایک بار)
+```bash
+pkg update -y && pkg upgrade -y
+pkg install -y git python nano
+```
 
-آپ کے پاس کمپیوٹر نہیں، اس لیے سب کچھ فون سے۔
+## 2) Project download karein
+```bash
+cd ~
+git clone --branch gemini-free-tier https://github.com/iqrarkhilji001-ui/Khilji-agent-.git personal-agent
+cd ~/personal-agent
+```
 
-1. **GitHub** (github.com) پر مفت اکاؤنٹ بنائیں۔ ایک نیا **private** repository بنائیں، مثلاً `my-ai-agent`۔
-2. **مسئلہ:** فون کا براؤزر پورا فولڈر اپلوڈ نہیں کر سکتا، اور اس پروجیکٹ میں کئی فولڈر ہیں۔ اس لیے **Termux** استعمال کریں۔ اسے F-Droid (f-droid.org) سے انسٹال کریں۔ Termux میں یہ لکھیں:
-   ```
-   pkg update
-   pkg install git unzip
-   termux-setup-storage
-   ```
-   پھر ZIP فائل (`personal-agent-v0.3.2.zip`) کو فون کے Downloads میں محفوظ کریں اور یہ لکھیں (`AAPKA-NAAM` کی جگہ اپنا GitHub نام):
-   ```
-   cd ~
-   unzip ~/storage/downloads/personal-agent-v0.3.2.zip
-   cd personal-agent
-   git init -b main
-   git add -A
-   git commit -m "first upload"
-   git remote add origin https://github.com/AAPKA-NAAM/my-ai-agent.git
-   git push -u origin main
-   ```
-   پاس ورڈ مانگے تو GitHub کا **Personal Access Token** ڈالیں (GitHub کی Settings > Developer settings میں بنتا ہے؛ مینو کے نام بدل سکتے ہیں)۔ **token صرف Termux میں لکھیں، چیٹ میں کبھی نہیں۔**
-   اگر یہ مشکل لگے تو کسی ایسے شخص سے کہیں جس کے پاس کمپیوٹر ہو۔ اس کے لیے دو منٹ کافی ہیں۔
-3. **render.com** پر مفت اکاؤنٹ بنائیں۔ New > Web Service > اپنا repository چنیں > Runtime **Docker**، Instance **Free**، Health check path `/api/health`۔
-4. Render کے **Environment** فارم میں خود لکھیں (چیٹ میں نہیں):
-   - `ANTHROPIC_API_KEY` = آپ کی key (console.anthropic.com پر **ماہانہ خرچ کی حد** ضرور لگائیں)
-   - `AGENT_TOKEN` = کم از کم 32 حروف کا لمبا خفیہ پاس ورڈ
-   - `AGENT_ENABLE_RUN_PYTHON` = `0`
-5. Deploy کریں۔ فون کے Chrome میں `https://آپکا-نام.onrender.com` کھولیں اور token ایک بار ڈالیں۔
-6. **About** ٹیب میں **Test API key** اور **Test web search** دبائیں اور نتیجہ دیکھیں۔
+Agar GitHub branch ka naam ya repo access error de, error ka text bhejein — API key ya token nahin.
 
-**Render کے مفت پلان کی حد:** 15 منٹ خاموشی کے بعد سرور سو جاتا ہے، اور **دوبارہ جاگنے پر ڈیٹابیس مٹ جاتا ہے** (ہسٹری، میموری، اور **جوڑے ہوئے فون** سب)۔ پھر فون کو دوبارہ pair کرنا پڑتا ہے۔ فون کا companion یہ پہچان لیتا ہے، رک جاتا ہے اور بتاتا ہے کہ دوبارہ pair کریں۔ اگر فون ہر 30 سیکنڈ بعد سرور کو پوچھتا رہے تو سرور جاگتا رہتا ہے اور مہینے کے مفت گھنٹے (750) تقریباً پورے لگ جاتے ہیں۔
+## 3) Python packages install karein
+```bash
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
 
----
+## 4) Gemini API key set karein
+Google AI Studio se apni Gemini API key khud hasil karein: https://aistudio.google.com/app/apikey
 
-## حصہ 2: آواز سے بات کرنا
+Phir Termux mein:
+```bash
+cd ~/personal-agent
+cp .env.example .env
+nano .env
+```
 
-1. Chrome میں اپنا `https://...onrender.com` کھولیں (آواز کے لیے **HTTPS ضروری** ہے)۔
-2. **مائیک** دبائیں۔ پہلی بار Chrome مائیکروفون کی اجازت مانگے گا، **Allow** کریں۔
-3. بولیں۔ جو سنائی دیا وہ اسکرین پر "Heard: ..." میں نظر آتا ہے۔ جواب لکھا بھی آتا ہے اور بول کر سنایا بھی جاتا ہے۔
-4. **Stop speaking** بولنا روکتا ہے۔ **Cancel** کام روکتا ہے۔ زبان فہرست سے چنیں (English، اردو، ہندی)۔
-5. مائیک نہ چلے تو لکھ کر بھیجیں۔ یہ ہمیشہ چلتا ہے۔
+File mein `GEMINI_API_KEY=` ke baad apni key likhein. Misal ke taur par:
+```
+GEMINI_API_KEY=YOUR_PRIVATE_KEY_HERE
+```
+Baaki settings waise hi rehne dein. Save: **Ctrl+O**, Enter; exit: **Ctrl+X**. Termux mein Ctrl key keyboard toolbar se mil sakti hai.
 
-یاد رکھیں: Chrome کی آواز پہچان عام طور پر انٹرنیٹ مانگتی ہے، اور اردو/ہندی کی درستگی ہر فون پر یکساں نہیں ہوتی۔ یہ سب صرف نقلی (mock) ٹیسٹوں میں آزمایا گیا، **اصلی فون پر نہیں۔**
+**Key ko GitHub par commit/upload na karein.** `.env` ko project ki .gitignore mein ignore hona chahiye.
 
----
+## 5) Pehle configuration check karein
+```bash
+python run.py --check
+```
+Yeh Gemini API ko chhoti real request bhejta hai aur web search check karta hai. API check fail ho to error ka text bhejein — key khud na bhejein.
 
-## راستہ A: Termux companion (APK کے بغیر)
+## 6) Agent start karein
+```bash
+python run.py
+```
+Pehli dafa terminal mein access token generate ho sakta hai. Isay private rakhein. App kholne ke liye isi phone ke Chrome mein:
+```
+http://127.0.0.1:8080
+```
+Token app mein enter karein. Termux ko band na karein; server chalne ke liye session active rehna chahiye.
 
-1. F-Droid سے **Termux** اور **Termux:API** دونوں انسٹال کریں (دونوں ایک ہی ذریعے سے، ورنہ آپس میں نہیں چلتے)۔
-2. Termux میں:
-   ```
-   pkg install python termux-api
-   ```
-   اینڈرائیڈ کی Settings میں Termux کو notifications کی اجازت دیں۔
-3. ZIP میں `companion/termux/companion.py` موجود ہے:
-   ```
-   cd ~/personal-agent/companion/termux
-   ```
-4. ایجنٹ کے **Phone** ٹیب پر **Create pairing code** دبائیں۔ کوڈ 10 منٹ چلتا ہے اور صرف ایک بار۔
-5. Termux میں:
-   ```
-   python companion.py pair https://aapka-naam.onrender.com ABCD-2345
-   python companion.py run
-   ```
-6. Phone ٹیب میں آپ کا فون "active" دکھنا چاہیے۔
-7. ایجنٹ سے کہیں: "مجھے ایک notification بھیجو" یا "دس منٹ بعد چائے کی یاد دلاؤ"۔
+## 7) Rozana use / band karna
+- Server chal raha ho to Chrome mein `http://127.0.0.1:8080` kholein.
+- Server band karna ho to Termux mein **Ctrl+C**.
+- Dobara chalana ho:
+  ```bash
+  cd ~/personal-agent
+  python run.py
+  ```
+- Android Battery settings mein Termux ke liye battery restriction hata dein. Android phir bhi background process ko rok sakta hai.
+- Phone restart ke baad Termux khol kar server dobara start karein.
 
-**حدیں:** reminder صرف تب بجتا ہے جب Termux چل رہا ہو (`termux-wake-lock` چلائیں اور بیٹری سیور سے Termux کو مستثنیٰ کریں)۔ یہ سسٹم الارم نہیں ہے۔
-**بند کرنا:** `python companion.py unpair` یا Phone ٹیب میں **Disconnect this phone**۔
+## 8) Project ki built-in limits
+- Trial: pehli server startup se 30 din.
+- AI model runtime cap: kul 10 minute har Pakistan-time din mein; midnight par reset.
+- Yeh app ke apne limits hain; Gemini ki free-tier availability/model limits alag hain aur Google badal sakta hai.
+- Local SQLite data phone ke project/data folder mein rahega. Folder delete ya app data clear karne se history/trial record mit sakta hai.
+- Phone par local setup remote public website nahin banata. Bahar se access ke liye secure hosting/network setup alag chahiye; is guide mein port internet par expose nahi kiya gaya.
 
----
+## Troubleshooting
+- `ModuleNotFoundError`: `pip install -r requirements.txt` dobara chalayein.
+- `GEMINI_API_KEY is not set`: `.env` mein key ki line check karein.
+- `Address already in use`: pehle chal raha server band karein (Ctrl+C), phir dobara start karein.
+- Kisi bhi error ka text/screenshot bhej sakte hain, lekin API key, access token, ya private credentials chhupa kar.
 
-## راستہ B: اصلی APK (GitHub کلاؤڈ میں بنائیں)
-
-1. اپنے repository میں **Actions** ٹیب > **Build Android companion (debug APK)** > **Run workflow**۔
-2. کامیاب ہو تو رن کے اندر **agent-companion-debug-apk** artifact ڈاؤن لوڈ کریں (یہ zip ہوتی ہے، کھول کر `.apk` نکالیں)۔
-3. APK انسٹال کرنے کے لیے اینڈرائیڈ "unknown apps" کی اجازت مانگے گا۔ صرف اپنی بنائی ہوئی فائل کے لیے دیں۔
-4. ایپ کھولیں: سرور ایڈریس اور pairing code ڈالیں > **Pair this phone**۔
-5. **Allow notifications** اور (reminders کے لیے) **Allow exact reminders** دبائیں۔
-
-**یہ workflow اور ایپ کا کوڈ ابھی تک کبھی compile نہیں ہوا۔** پہلی بار build فیل ہو سکتی ہے (ورژن یا syntax کی غلطی)۔ سرخ error کا متن مجھے بھیجیں، میں ٹھیک کر دوں گا۔
-ایپ بند ہو تو نئے commands زیادہ سے زیادہ ہر ~15 منٹ میں آتے ہیں (اینڈرائیڈ کی حد)۔ ایپ کھلی ہو تو ہر 30 سیکنڈ۔
-
----
-
-## ایپ کیا کر سکتی ہے اور کیا نہیں
-- **کر سکتی ہے:** notification دکھانا، reminder لگانا/ہٹانا، ایک https لنک دکھانا (جو آپ tap کریں تو کھلتا ہے؛ لنک دکھانے سے پہلے آپ سے اجازت لی جاتی ہے)۔
-- **نہیں کر سکتی:** SMS، کال، contacts، لوکیشن، مائیکروفون، دوسری ایپس چلانا، shell۔ یہ کوڈ میں ہیں ہی نہیں۔
-- ایجنٹ "ہو گیا" تب کہتا ہے جب فون خود کامیابی بتائے۔ ورنہ "قطار میں ہے"۔
-
-## آپ کو خود کیا کرنا ہے (خلاصہ)
-1. GitHub اور Render اکاؤنٹ، ANTHROPIC key (خرچ کی حد کے ساتھ)، لمبا AGENT_TOKEN۔
-2. حصہ 1 کے قدم، پھر About ٹیب کے دونوں ٹیسٹ۔
-3. پہلے راستہ A آزمائیں۔ پھر چاہیں تو راستہ B۔
-4. جو نہ چلے اس کا error متن بھیجیں (key یا token کبھی نہیں)۔
+**Status:** GitHub branch se guide update hui hai. Termux install, phone par test, aur actual Gemini API run abhi verify nahi hue.

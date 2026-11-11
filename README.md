@@ -23,6 +23,12 @@ Model: `claude-sonnet-5-5` (override with `ANTHROPIC_MODEL`), checked against An
 Sonnet 5.5 rejects `temperature`/`top_p`/`top_k` and forced tool choice (none are sent) and returns thinking blocks
 that must be passed back unchanged (they are).
 
+## Free-trial AI usage limit
+- The default daily AI-call runtime allowance is **600 seconds (10 minutes)** across all tasks, including verification calls.
+- Usage is measured around actual model API calls, rounded up to whole seconds, and stored in SQLite by Pakistan local date (`Asia/Karachi`). It survives normal server restarts when the data directory is persistent and resets at midnight Pakistan time.
+- Override with `AGENT_DAILY_AI_SECONDS` (60–86400 seconds). The default is 600. This is an AI runtime cap, not a 30-day subscription/billing control; configure the model provider separately and do not enable paid billing during the trial.
+- A call already in progress can finish after the cap is reached; the next model call is blocked. Run a single app instance for reliable enforcement across tasks.
+
 ## Using it
 - **Voice:** mic button (Chrome on Android, HTTPS or localhost). States: listening, working, speaking, error. You see
   the recognised text; replies are shown and spoken; Stop speaking / Retry / Cancel; language list (English, Urdu, Hindi);

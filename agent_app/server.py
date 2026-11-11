@@ -16,7 +16,7 @@ from . import preflight
 from .agent import AgentRunner
 from .config import Config
 from .db import MEMORY_KINDS, Store, now
-from .llm import AnthropicClient
+from .llm import GeminiClient
 from .ratelimit import RateLimiter
 from .redact import RedactingFilter, looks_like_secret
 from .tools import NOT_IMPLEMENTED, ToolRegistry, build_registry
@@ -43,7 +43,7 @@ def create_app(cfg: Config, llm: Any = None, registry: Optional[ToolRegistry] = 
     store = Store(cfg.db_path)
     store.mark_interrupted()
     registry = registry or build_registry(cfg.enable_run_python)
-    llm = llm or AnthropicClient(cfg)
+    llm = llm or GeminiClient(cfg)
     runner = AgentRunner(cfg, store, llm, registry, inline=inline, http_get=http_get, resolver=resolver)
     app.extensions["agent"] = {"store": store, "runner": runner, "cfg": cfg, "limiter": limiter}
 
@@ -167,7 +167,7 @@ def create_app(cfg: Config, llm: Any = None, registry: Optional[ToolRegistry] = 
         if len(text) > MAX_REQUEST_CHARS:
             return _err(f"Request is too long (max {MAX_REQUEST_CHARS} characters).")
         if not cfg.api_key:
-            return _err("ANTHROPIC_API_KEY is not configured on the server. See the README.", 503)
+            return _err("GEMINI_API_KEY is not configured on the server. See the README.", 503)
         limited = _limit("task", 30, 60)
         if limited:
             return limited

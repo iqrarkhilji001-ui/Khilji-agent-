@@ -42,6 +42,7 @@ def create_app(cfg: Config, llm: Any = None, registry: Optional[ToolRegistry] = 
 
     store = Store(cfg.db_path)
     store.mark_interrupted()
+    store.trial_status(cfg.trial_days)  # starts once; persisted in SQLite
     registry = registry or build_registry(cfg.enable_run_python)
     llm = llm or GeminiClient(cfg)
     runner = AgentRunner(cfg, store, llm, registry, inline=inline, http_get=http_get, resolver=resolver)
@@ -143,6 +144,7 @@ def create_app(cfg: Config, llm: Any = None, registry: Optional[ToolRegistry] = 
     @app.get("/api/status")
     def status():
         used_seconds = store.daily_ai_seconds_used()
+        trial = store.trial_status(cfg.trial_days)
         return jsonify(
             warnings=preflight.config_warnings(cfg),
             model=cfg.model,
@@ -169,6 +171,9 @@ def create_app(cfg: Config, llm: Any = None, registry: Optional[ToolRegistry] = 
             return _err(f"Request is too long (max {MAX_REQUEST_CHARS} characters).")
         if not cfg.api_key:
             return _err("GEMINI_API_KEY is not configured on the server. See the README.", 503)
+        trial = store.trial_status(cfg.trial_days)
+        if not trial["active"]:
+            return _err("The 30-day AI trial has ended. AI tasks are paused.", 403)
         limited = _limit("task", 30, 60)
         if limited:
             return limited

@@ -7,6 +7,7 @@ import secrets
 import sqlite3
 import threading
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Any, Optional
 
@@ -28,6 +29,10 @@ _TASK_FIELDS = {
 }
 
 SCHEMA = """
+CREATE TABLE IF NOT EXISTS daily_ai_usage (
+    usage_date TEXT PRIMARY KEY,
+    seconds REAL NOT NULL DEFAULT 0
+);
 CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     request TEXT NOT NULL,
@@ -163,6 +168,30 @@ class Store:
     def close(self) -> None:
         with self._lock:
             self._db.close()
+
+    # ---- daily AI usage ------------------------------------------------
+    @staticmethod
+    def _pakistan_day() -> str:
+        return datetime.now(ZoneInfo("Asia/Karachi")).date().isoformat()
+
+    def daily_ai_seconds_used(self, usage_date: Optional[str] = None) -> float:
+        day = usage_date or self._pakistan_day()
+        row = self._one("SELECT seconds FROM daily_ai_usage WHERE usage_date = ?", (day,))
+        return float(row["seconds"]) if row else 0.0
+
+    def add_daily_ai_seconds(self, seconds: float, usage_date: Optional[str] = None) -> float:
+        if seconds <= 0:
+            return self.daily_ai_seconds_used(usage_date)
+        day = usage_date or self._pakistan_day()
+        with self._lock:
+            self._db.execute(
+                "INSERT INTO daily_ai_usage (usage_date, seconds) VALUES (?, ?) "
+                "ON CONFLICT(usage_date) DO UPDATE SET seconds = seconds + excluded.seconds",
+                (day, float(seconds)),
+            )
+            self._db.commit()
+            row = self._db.execute("SELECT seconds FROM daily_ai_usage WHERE usage_date = ?", (day,)).fetchone()
+            return float(row["seconds"])
 
     # ---- tasks ---------------------------------------------------------
     def create_task(self, request: str) -> int:

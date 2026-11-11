@@ -18,7 +18,7 @@ from agent_app.server import create_app  # noqa: E402
 from agent_app.tools import ToolContext, ToolError, build_registry, check_url, safe_path  # noqa: E402
 
 TOKEN = "t" * 32
-FAKE_KEY = "sk-ant-FAKEKEY1234567890"
+FAKE_KEY = "AIzaSyDUMMYFAKEKEY1234567890"
 
 
 def text(t):
@@ -53,7 +53,7 @@ class Base(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.cfg = Config.from_env(env={"AGENT_DATA_DIR": self.tmp.name, "AGENT_TOKEN": TOKEN,
-                                        "ANTHROPIC_API_KEY": FAKE_KEY}, load_dotenv=False)
+                                        "GEMINI_API_KEY": FAKE_KEY}, load_dotenv=False)
         self.cfg.auth_fail_delay = 0
         self.ws = self.cfg.workspace
 
@@ -143,9 +143,9 @@ class ToolTests(Base):
 
     def test_run_python_hides_secrets(self):
         reg, ctx = build_registry(), self.ctx()
-        os.environ["ANTHROPIC_API_KEY"] = FAKE_KEY
-        self.addCleanup(os.environ.pop, "ANTHROPIC_API_KEY", None)
-        (self.ws / "p.py").write_text("import os;print(os.environ.get('ANTHROPIC_API_KEY'))")
+        os.environ["GEMINI_API_KEY"] = FAKE_KEY
+        self.addCleanup(os.environ.pop, "GEMINI_API_KEY", None)
+        (self.ws / "p.py").write_text("import os;print(os.environ.get('GEMINI_API_KEY'))")
         ctx.approved = True
         out = reg.execute("run_python", {"args": ["p.py"]}, ctx)
         self.assertIn("None", out)

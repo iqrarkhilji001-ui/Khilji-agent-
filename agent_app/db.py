@@ -29,7 +29,7 @@ _TASK_FIELDS = {
 }
 
 SCHEMA = """
-CREATE TABLE IF NOT EXISTS daily_ai_usage (
+CREATE TABLE IF NOT EXISTS app_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);\nCREATE TABLE IF NOT EXISTS daily_ai_usage (
     usage_date TEXT PRIMARY KEY,
     seconds REAL NOT NULL DEFAULT 0
 );
@@ -168,6 +168,23 @@ class Store:
     def close(self) -> None:
         with self._lock:
             self._db.close()
+
+    # ---- persistent trial ------------------------------------------------
+    def trial_status(self, trial_days: int = 30) -> dict:
+        """Start once and persist the trial timestamps in SQLite."""
+        with self._lock:
+            row = self._db.execute("SELECT value FROM app_meta WHERE key='trial_started_at'").fetchone()
+            if row is None:
+                started = datetime.now(timezone.utc)
+                self._db.execute("INSERT INTO app_meta(key,value) VALUES('trial_started_at',?)",
+                                 (started.isoformat(timespec="seconds"),))
+                self._db.commit()
+            else:
+                started = datetime.fromisoformat(row["value"])
+            ends = started + timedelta(days=trial_days)
+            remaining = max(0, (ends - datetime.now(timezone.utc)).total_seconds())
+            return {"started_at": started.isoformat(timespec="seconds"), "ends_at": ends.isoformat(timespec="seconds"),
+                    "active": remaining > 0, "remaining_seconds": int(remaining)}
 
     # ---- daily AI usage ------------------------------------------------
     @staticmethod

@@ -30,7 +30,7 @@ Because the host is shared and public, this build ships with **code execution tu
 2. Create a free account at render.com. New > Web Service > connect that repository.
 3. Settings: Runtime **Docker**, Instance type **Free**, Health check path `/api/health`.
 4. Environment variables (type them into Render's form yourself; never send them in chat):
-   - `ANTHROPIC_API_KEY` = your key from console.anthropic.com (billed to you by Anthropic; set a spend limit there)
+   - `GEMINI_API_KEY` = your key from Google AI Studio (billed to you by Gemini; set a spend limit there)
    - `AGENT_TOKEN` = a long random password, at least 32 characters
    - `AGENT_ENABLE_RUN_PYTHON` = `0`
    - `AGENT_TRUST_PROXY` = `1` (already set in the Dockerfile; keep it)
@@ -86,11 +86,11 @@ Not tested here. Install Termux from F-Droid, `pkg install python`, copy the pro
 ## Environment variables (all of them)
 | Name | Required | Purpose |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | yes | Your Anthropic key. Set it in the host's form, never in files or chat |
+| `GEMINI_API_KEY` | yes | Your Gemini key. Set it in the host's form, never in files or chat |
 | `AGENT_TOKEN` | yes on hosts (the server refuses to start without it) | Login token, 32+ characters |
 | `AGENT_ENABLE_RUN_PYTHON` | set `0` on hosts (the Dockerfile already does) | Disables the code-execution tool |
 | `AGENT_EPHEMERAL_STORAGE` | set by the Dockerfile | Shows the temporary-storage warning |
-| `ANTHROPIC_MODEL` | no (`claude-sonnet-5-5`) | Model ID override |
+| `GEMINI_MODEL` | no (`gemini-2.5-flash`) | Model ID override |
 | `AGENT_PHONE_WAIT` | no (20) | Seconds the agent waits for a phone to confirm |
 | `AGENT_DEVICE_TOKEN_DAYS` | no (90) | Lifetime of a paired phone's credential |
 | `AGENT_NOTIFY_ON_COMPLETE` | no (0) | `1` = show a generic "task finished/failed" notification on paired phones (no task text is sent) |
@@ -105,5 +105,5 @@ Not tested here. Install Termux from F-Droid, `pkg install python`, copy the pro
 - Random token of 32+ characters; never reuse a password.
 - Keep code execution off (`AGENT_ENABLE_RUN_PYTHON=0`). With it on, approved code runs as the same OS user as the
   server and could read the server's environment, including your API key.
-- Set a monthly spend limit in your Anthropic console.
+- Set a monthly spend limit in your Gemini console.
 - If you suspect the token leaked, change `AGENT_TOKEN` in the host's dashboard and redeploy.

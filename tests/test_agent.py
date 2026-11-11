@@ -82,6 +82,12 @@ class ConfigTests(unittest.TestCase):
             with self.assertRaises(ConfigError):
                 Config.from_env(env={"AGENT_DATA_DIR": d, "AGENT_TOKEN": "short"}, load_dotenv=False)
 
+    def test_daily_ai_limit_defaults_to_ten_minutes_and_can_be_configured(self):
+        with tempfile.TemporaryDirectory() as d:
+            cfg = Config.from_env(env={"AGENT_DATA_DIR": d, "AGENT_DAILY_AI_SECONDS": "900"},
+                                  load_dotenv=False)
+            self.assertEqual(cfg.daily_ai_limit_seconds, 900)
+
     def test_token_generated_with_private_permissions(self):
         with tempfile.TemporaryDirectory() as d:
             cfg = Config.from_env(env={"AGENT_DATA_DIR": d}, load_dotenv=False)
@@ -165,6 +171,23 @@ class ToolTests(Base):
 
 
 class AgentTests(Base):
+    def test_daily_ai_limit_blocks_next_model_call_and_status_reports_usage(self):
+        self.cfg.daily_ai_limit_seconds = 1
+        c = self.app([text("First answer")])
+        first = self.run_task(c, "first")
+        self.assertEqual(self.task(c, first)["task"]["status"], "completed_unverified")
+        self.assertEqual(len(self.llm.calls), 1)
+        second = self.run_task(c, "second")
+        failed = self.task(c, second)["task"]
+        self.assertEqual(failed["status"], "failed")
+        self.assertIn("Daily AI time limit reached", failed["error"])
+        self.assertEqual(len(self.llm.calls), 1)
+        status = c.get("/api/status", headers=self.H).get_json()
+        self.assertEqual(status["daily_ai_limit_seconds"], 1)
+        self.assertGreaterEqual(status["daily_ai_used_seconds"], 1)
+        self.assertEqual(status["daily_ai_remaining_seconds"], 0)
+        self.assertEqual(status["daily_ai_resets_at"], "00:00 Asia/Karachi")
+
     def test_plain_answer_not_independently_checked(self):
         c = self.app([text("Hello!")])
         t = self.task(c, self.run_task(c, "hi"))["task"]

@@ -5,7 +5,7 @@ import sys
 
 from agent_app import preflight
 from agent_app.config import Config, ConfigError
-from agent_app.llm import AnthropicClient
+from agent_app.llm import GeminiClient
 from agent_app.server import create_app
 
 
@@ -19,7 +19,7 @@ def main() -> int:
     for item in preflight.config_warnings(cfg):
         print(f"[{item['level'].upper()}] {item['message']}")
     if "--check" in sys.argv:
-        result = preflight.check_api(cfg, AnthropicClient(cfg))
+        result = preflight.check_api(cfg, GeminiClient(cfg))
         print(f"[{'OK' if result['ok'] else 'FAIL'}] API: {result['message']}")
         search = preflight.check_search(cfg)
         print(f"[{'OK' if search['ok'] else 'FAIL'}] Search: {search['message']}")

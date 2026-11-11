@@ -1,109 +1,87 @@
-# Deploying so you can open the agent from your Android phone (no computer of your own)
+# Run Personal AI Agent on your Android phone (free local setup)
 
-Researched 2026-10-28 from the providers' own docs. Prices and limits change; re-check before relying on them.
-**Nothing here has been deployed or tested on a real host.** The build sandbox had no Docker daemon, no PyPI
-access and no access to these services. Follow the steps and use the Self-check to see what really works.
+**Recommended for this project right now: Termux on Android.** No Render account, payment card, paid hosting, or public server is required. Your phone runs the server locally.
 
-> ## Important: Render's free tier forgets everything
-> Render free web services have an **ephemeral filesystem**. The SQLite database (task history, saved memory)
-> and workspace files are **erased on every restart, redeploy and sleep** (it sleeps after 15 idle minutes).
-> Do not expect the agent to remember anything long-term on this host. Anything important must be copied out
-> by you. Persistent storage on Render is a paid feature, which this project does not buy.
+This setup has not yet been verified on your physical phone. Follow the checks below and treat their actual output as the test result.
 
-## Option A (recommended): Render free web service
-From [render.com/docs/free](https://render.com/docs/free):
-- Free web services need **no credit card**; HTTPS and a `*.onrender.com` address are included.
-- Spins down after 15 minutes without traffic; waking takes about a minute. A task running at that moment is lost.
-- Ephemeral filesystem (see the box above). 750 free instance hours per month.
+## Before you start
 
-Because the host is shared and public, this build ships with **code execution turned off**
-(`AGENT_ENABLE_RUN_PYTHON=0`) and every request needs your secret token. The server **refuses to start** if
-`AGENT_TOKEN` is missing (a generated token would change at each restart and lock you out).
+- Android phone with internet access.
+- Termux installed from the official F-Droid listing: https://f-droid.org/packages/com.termux/
+- A Gemini API key created privately in Google AI Studio: https://aistudio.google.com/app/apikey
+- Do not paste your API key or agent access token into ChatGPT, GitHub issues, screenshots, or messages.
 
-### Steps
-1. Create a free GitHub account and a **private** repository, then put the ZIP's contents in it. **Correction to
-   earlier versions of this guide:** GitHub's web "Upload files" page cannot upload folders from a phone browser, and
-   this project has several nested folders. Phone-only route: use Termux (`pkg install git unzip`, unzip the ZIP,
-   `git init`, `git push`; exact commands are in ANDROID_SETUP_UR.md, part 1). The GitHub password prompt takes a
-   personal access token that you type only into Termux. Or ask someone with a computer to drag the unzipped folder
-   into the repository page. Do **not** upload any `.env` file or key. (Not tested from a phone.)
-2. Create a free account at render.com. New > Web Service > connect that repository.
-3. Settings: Runtime **Docker**, Instance type **Free**, Health check path `/api/health`.
-4. Environment variables (type them into Render's form yourself; never send them in chat):
-   - `GEMINI_API_KEY` = your key from Google AI Studio (billed to you by Gemini; set a spend limit there)
-   - `AGENT_TOKEN` = a long random password, at least 32 characters
-   - `AGENT_ENABLE_RUN_PYTHON` = `0`
-   - `AGENT_TRUST_PROXY` = `1` (already set in the Dockerfile; keep it)
-   - (`AGENT_EPHEMERAL_STORAGE=1` and the data folder are already set in the Dockerfile.)
-5. Deploy. If the deploy log says "AGENT_TOKEN is not set", add it and redeploy.
-6. Open `https://<your-service>.onrender.com` in Chrome on your phone and paste the token once.
-7. Go to the **About** tab:
-   - The yellow cards list warnings (temporary storage, etc.).
-   - Press **Test API key** (one tiny real call). A red message tells you exactly what is wrong (bad key, model not found, no credit).
-   - Press **Test web search**. This is the first real test of DuckDuckGo from Render's servers. If it fails,
-     search is unavailable there; the agent can still read pages you give it by URL.
-8. Chrome menu > Add to Home screen.
-9. Voice: tap the mic and allow the microphone. It needs HTTPS (Render provides it). Untested on a real phone.
-10. Android companion (notifications/reminders): follow ANDROID_SETUP_UR.md. In the **Phone** tab create a pairing code and
-    enter it with your server address in the companion.
+## Install and download
 
-### What happens when the free server sleeps or restarts
-- Pages and voice stop working until it wakes (about a minute after the next visit).
-- Everything stored locally is erased: task history, saved memory, **paired phones and queued phone commands**.
-  Companions get a 401, stop, and tell you to pair again. Reminders already scheduled by the native Android app stay
-  on the phone (system alarms); reminders held by the Termux companion stay in its own file too.
-- Commands the agent queued while the phone was offline are lost, and the agent will have reported them as
-  "queued", never "done".
-- A phone that polls every 30 seconds keeps the service awake, which uses about 744 of the 750 free hours in a
-  31-day month. If the hours run out, Render suspends the service until the next month.
-- Reliable scheduled reminders therefore come from the phone itself (native app alarms), not from the free server.
+Open Termux and run:
 
-(`render.yaml` is an optional "Blueprint" shortcut. I could not confirm whether Blueprints need a payment method,
-so the manual route above is the safe one.)
+```bash
+pkg update -y && pkg upgrade -y
+pkg install -y git python nano
+cd ~
+git clone --branch gemini-free-tier https://github.com/iqrarkhilji001-ui/Khilji-agent-.git personal-agent
+cd ~/personal-agent
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
 
-## Persistent storage (optional, paid)
-The free Render plan cannot keep data. To keep task history, memory and paired phones across restarts you need a host
-with a persistent disk. On Render that means a paid instance type with a **Disk** attached (Render's dashboard shows
-the current price; this project buys nothing for you):
-1. Service > Disks > add a disk, mount path `/data`.
-2. Set `AGENT_DATA_DIR=/data` and `AGENT_EPHEMERAL_STORAGE=0` (this hides the "temporary storage" warning; only do it
-   once the disk really exists).
-3. Keep exactly **one** instance: the app runs tasks in memory and uses a single SQLite file, so it cannot be scaled to
-   several instances. Redeploys still interrupt a running task.
-The SQLite file is `agent.db` inside `AGENT_DATA_DIR`; workspace files are in `workspace/` next to it. Back up by
-downloading them, never commit them. **Untested on a real host.**
+## Configure the private API key
 
-## Option B: PythonAnywhere free account
-Their docs: 1 web app, 512 MiB disk, a 1-month expiry you must renew, outbound internet only to an allowlist that
-**includes** `api.anthropic.com` and `duckduckgo.com` ([allowlist](https://www.pythonanywhere.com/whitelist/)). Disk is
-persistent, so memory would survive. **Unverified:** whether background task threads keep running between requests
-on the free tier (this app runs tasks in threads). Test a short task first.
+```bash
+cd ~/personal-agent
+cp .env.example .env
+nano .env
+```
 
-## Option C: run it on the phone itself (Termux)
-Not tested here. Install Termux from F-Droid, `pkg install python`, copy the project over,
-`pip install -r requirements.txt && python run.py --check && python run.py`, then open `http://127.0.0.1:8080`.
+Set the value on the `GEMINI_API_KEY=` line to your own key. Keep the other defaults initially. Save with Ctrl+O, Enter, then exit with Ctrl+X.
 
-## Environment variables (all of them)
-| Name | Required | Purpose |
-|---|---|---|
-| `GEMINI_API_KEY` | yes | Your Gemini key. Set it in the host's form, never in files or chat |
-| `AGENT_TOKEN` | yes on hosts (the server refuses to start without it) | Login token, 32+ characters |
-| `AGENT_ENABLE_RUN_PYTHON` | set `0` on hosts (the Dockerfile already does) | Disables the code-execution tool |
-| `AGENT_EPHEMERAL_STORAGE` | set by the Dockerfile | Shows the temporary-storage warning |
-| `GEMINI_MODEL` | no (`gemini-2.5-flash`) | Model ID override |
-| `AGENT_PHONE_WAIT` | no (20) | Seconds the agent waits for a phone to confirm |
-| `AGENT_DEVICE_TOKEN_DAYS` | no (90) | Lifetime of a paired phone's credential |
-| `AGENT_NOTIFY_ON_COMPLETE` | no (0) | `1` = show a generic "task finished/failed" notification on paired phones (no task text is sent) |
-| `AGENT_TRUST_PROXY` | set to `1` by the Dockerfile | Use the real client address behind Render's proxy for the login lockout and rate limits. Never set it when the app is directly reachable |
-| `AGENT_ALLOW_RUN_PYTHON_IN_PRODUCTION` | no (0) | The production entry point ignores `AGENT_ENABLE_RUN_PYTHON=1` unless this is also `1`. Leave it off |
-| `BRAVE_API_KEY` | no | Optional metered search API (Brave requires a card) |
-| `AGENT_MAX_STEPS`, `AGENT_MAX_TOKENS`, `AGENT_HOST`, `AGENT_PORT`, `AGENT_DATA_DIR` | no | Tuning |
+The `.env` file is excluded by `.gitignore`; never commit it or share its contents.
 
-`/api/health` returns only `{"ok": true}` and needs no login; it reveals nothing about configuration.
+## Run the checks
 
-## Security checklist for any public deployment
-- Random token of 32+ characters; never reuse a password.
-- Keep code execution off (`AGENT_ENABLE_RUN_PYTHON=0`). With it on, approved code runs as the same OS user as the
-  server and could read the server's environment, including your API key.
-- Set a monthly spend limit in your Gemini console.
-- If you suspect the token leaked, change `AGENT_TOKEN` in the host's dashboard and redeploy.
+```bash
+python -m unittest discover -s tests -v
+python run.py --check
+```
+
+The first command runs local automated tests using fake model responses; it does not prove that Gemini works. The second command makes a small real Gemini API request and checks web search. It may use a small amount of API quota. Do not share the key if a check fails; share only the error text after checking it contains no secrets.
+
+## Start the agent
+
+```bash
+python run.py
+```
+
+Keep Termux open and visit this address in Chrome on the same phone:
+
+```
+http://127.0.0.1:8080
+```
+
+If the app asks for an access token, the first startup prints it in Termux and saves it in the local data folder. Keep it private. The server listens on localhost only by default; this is not a public website and cannot be accessed from outside your phone.
+
+Stop the server with Ctrl+C in Termux. Start it again with:
+
+```bash
+cd ~/personal-agent
+python run.py
+```
+
+## Important limits
+
+- The app's trial starts on its first server initialization and lasts 30 days; its timestamp is stored in the local SQLite database.
+- The app limits model-call runtime to 10 minutes per Pakistan-time day, shared across tasks and verification. It resets at midnight Asia/Karachi.
+- These are app-level limits. Gemini API availability, quotas, and free-tier eligibility are controlled by Google and can change. This app does not enable paid billing automatically.
+- Keep the phone powered and Termux running while you use the agent. Android battery management may stop background processes; allow Termux background activity in Android settings.
+- Clearing Termux app data or deleting the project data folder can erase local history, saved memory, pairing records, and the locally stored trial timestamp.
+- This local setup does not expose the server to the internet. Do not change `AGENT_HOST` to `0.0.0.0` or forward port 8080 unless you have deliberately configured secure remote access.
+
+## If something fails
+
+- `ModuleNotFoundError`: run `pip install -r requirements.txt` again.
+- `GEMINI_API_KEY is not set`: check the private `.env` file and spelling of the variable.
+- `Address already in use`: stop the earlier server with Ctrl+C before restarting.
+- Git clone error: check the branch name and internet connection.
+- Android may restrict Termux background execution; reopen Termux and restart the server.
+
+**Not currently recommended:** Render or other public hosting. The previous Render attempt required a billing card, so this project does not depend on it. No cloud deployment or real-phone test is claimed by this guide.
